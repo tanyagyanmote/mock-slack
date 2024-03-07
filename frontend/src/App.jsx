@@ -19,9 +19,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 function App() {
 
   return (
-    // <div>
-    //   <SignUp />
-    // </div>
     <AuthProvider>
       <BrowserRouter>
         <Routes>

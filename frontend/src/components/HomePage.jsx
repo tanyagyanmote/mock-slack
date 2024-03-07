@@ -101,6 +101,7 @@ export default function HomePage() {
         }),
       });
       if (response.ok) {
+        fetchWorkspaces(newWorkspace.name);
         const newWorkspace = await response.json();
         setWorkspaces([...workspaces, newWorkspace]); // Update the workspaces state to include the new channel
         setNewWorkspaceName(''); // Reset the input field

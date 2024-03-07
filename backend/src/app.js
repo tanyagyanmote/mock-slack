@@ -44,7 +44,7 @@ app.use(
 // Your routes go here
 app.post('/v0/login',     auth.login);
 
-app.post('/v0/users/:email/workspaces', auth.Workspace);
+app.post('/v0/users/:email/workspaces', auth.postWorkspace);
 
 app.get('/v0/users/:email/workspaces', auth.getWorkspace);
 

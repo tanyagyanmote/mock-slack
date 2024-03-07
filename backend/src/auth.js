@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 var bcrypt = require('bcrypt');
 
 exports.login = async (req, res) => {
-    const login = await db.login(req.body.email, req.body.password);
+    const login = await db.login(req.body.email);
     if(!login){
         return res.status(401).send()
     }
@@ -15,35 +15,11 @@ exports.login = async (req, res) => {
         expiresIn: '30m',
         algorithm: 'HS256'
       });
-      return res.status(200).json({name: login.name, accessToken: accessToken})
+      return res.status(200).json({name: login.username, accessToken: accessToken})
     } else {
         return res.status(401).send()
     }
 };
-
-exports.Workspace = async (req, res) => {
-  const userEmail = req.params.email;
-  const workspaceData = req.body;
-  try {
-    await db.addWorkspaceToUser(userEmail, workspaceData);
-    res.status(200).send('Workspace added successfully');
-  } catch (error) {
-    console.error('Error adding workspace:', error);
-    res.status(500).send('Error adding workspace');
-  }
-};
-
-exports.getWorkspace = async (req, res) => {
-    const { email } = req.params;
-    try {
-        const workspaces = await db.getUserWorkspacesByEmail(email);
-        res.json(workspaces);
-    } catch (error) {
-        console.error('Error fetching workspaces:', error);
-        res.status(500).send('Error fetching workspaces');
-    }
-  };
-
 
 exports.check = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -56,9 +32,48 @@ exports.check = (req, res, next) => {
         req.user = user;
         next();
       });
-      
     } else {
       res.status(401).json({ message: "Unauthorized: No token provided" });
+    }
+};
+
+
+exports.getWorkspace = async (req, res) => {
+    const { email } = req.params;
+    try {
+        const workspaces = await db.getUserWorkspacesByEmail(email);
+        if (!workspaces) {
+            return res.status(404).send();
+        }
+        res.json(workspaces);
+    } catch (error) {
+        res.status(500).send();
+    }
+};
+
+exports.postWorkspace = async (req, res) => {
+    // const userEmail = req.params.email;
+    // const workspaceData = req.body;
+    // try {
+    //   await db.addWorkspaceToUser(userEmail, workspaceData);
+    //   res.status(200).send('Workspace added successfully');
+    // } catch (error) {
+    //   console.error('Error adding workspace:', error);
+    //   res.status(500).send('Error adding workspace');
+    // }
+    const { email } = req.params;
+    const workspaceData = req.body;
+    
+    try {
+        await db.addWorkspaceToUser(email, workspaceData);
+        res.status(200).send('Workspace added successfully');
+    } catch (error) {
+        if (error.message === 'User not found') {
+        res.status(404).send('User not found');
+        } else {
+        console.error('Error adding workspace:', error);
+        res.status(500).send('Error adding workspace');
+        }
     }
 };
 
@@ -66,6 +81,9 @@ exports.getChannels = async (req, res) => {
     const { email, workspaceName } = req.params;
     try {
         const channels = await db.getChannelsByWorkspace(email, workspaceName);
+        if (!channels) {
+            return res.status(404).send();
+        }
         const response = { channels: channels };
         res.json(response);
     } catch (error) {

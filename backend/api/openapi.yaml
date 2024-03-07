@@ -133,13 +133,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  message:
-                    type: string
-                  channel:
-                    type: object
-                    properties:
-                      name:
-                        type: string
+                  channels:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Channel'
         '400':
           description: Invalid input
         '404':
@@ -198,6 +195,11 @@ paths:
                 
 components:
   schemas:
+    Channel:
+      type: object
+      properties:
+        name:
+          type: string
 
     Workspace:
       type: object
