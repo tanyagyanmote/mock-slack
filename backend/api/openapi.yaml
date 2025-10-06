@@ -1,0 +1,275 @@
+#
+# CSE186 Assignment 8 Backend
+#
+
+openapi: '3.0.3'
+
+info:
+  description: CSE186 Assignment 8 Backend
+  version: 0.1.0
+  title: CSE186 Assignment 8 Backend
+
+servers:
+  - url: http://localhost:3010/v0
+
+paths:
+  /login:
+    post:
+      description: Login
+      requestBody:
+        description: Request Body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        200:
+          description: Mails Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnexpectedError'
+  
+  /users/{userID}/workspaces:
+    get:
+      security:
+        - bearerAuth: []
+      description: Fetches workspaces associated with a userID
+      parameters:
+        - in: path
+          name: email
+          required: true
+          schema:
+            type: string
+          description: The user's ID
+      responses:
+        200:
+          description: Successfully retrieved workspaces
+          content:
+            application/json:
+              schema:
+                type: array
+        403:
+          description: Bad Unauthorized token
+
+        401:
+          description: Bad Unauthorized token
+                
+        404:
+          description: User not found
+
+    post:
+      security:
+        - bearerAuth: []
+      description: Adds a workspace to a user
+      parameters:
+        - in: path
+          name: email
+          required: true
+          schema:
+            type: string
+          description: The user's email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+              required:
+                - name
+      responses:
+        200:
+          description: Workspace added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        default:
+          $ref: '#/components/schemas/UnexpectedError'
+        
+  /users/{email}/workspaces/{workspaceName}/channels:
+    post:
+      security:
+        - bearerAuth: []
+      description: Creates a new channel within a specific workspace
+      parameters:
+        - name: email
+          in: path
+          required: true
+          description: The email of the user.
+          schema:
+            type: string
+            format: email
+        - name: workspaceName
+          in: path
+          required: true
+          description: The name of the workspace to add the channel to.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: Channel creation data
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                channelName:
+                  type: string
+                  description: The name of the channel to create.
+              required:
+                - channelName
+      responses:
+        '201':
+          description: Channel created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  channels:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Channel'
+        '404':
+          description: User or workspace not found
+        '500':
+          description: Internal server error
+          
+    get:
+      security:
+        - bearerAuth: []
+      description: Retrieves channels from a workspace
+      parameters:
+        - name: email
+          in: path
+          required: true
+          description: The user's email address.
+          schema:
+            type: string
+            format: email
+        - name: workspaceName
+          in: path
+          required: true
+          description: The name of the workspace to retrieve channels from.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of channels within the specified workspace.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  channels:
+                    type: array
+                    items:
+                      type: string
+        '404':
+          description: User or workspace not found.
+        '500':
+          description: Internal server error.
+
+  /dummy:
+    get:
+      security:
+        - bearerAuth: []
+      description: Dummy Endpoint
+      responses:
+        200:
+          description: Succesful
+  
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                
+components:
+  schemas:
+    Channel:
+      type: object
+      properties:
+        name:
+          type: string
+
+    Workspace:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    UnexpectedError:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+
+    Credentials:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    User:
+      type: object
+      properties:
+        accessToken:
+          type: string
+      required:
+        - accessToken
+
+    Error:
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+      required:
+        - code
+        - message
+
+    DummyResponse:
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    
+  securitySchemes:
+    bearerAuth:            # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT    # optional, arbitrary value for documentation purposes
