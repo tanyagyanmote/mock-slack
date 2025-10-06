@@ -1,4 +1,4 @@
-🗨️ Diligent — Slack-Style Messaging App
+Slack-Style Messaging App
 
 A full-stack messaging system built as part of CSE 186: Full Stack Web Development at UC Santa Cruz.
 This project implements Diligent, a Slack-inspired single-page web application using the NERP Stack — Node.js, Express, React, and PostgreSQL — along with Material-UI for the frontend.
