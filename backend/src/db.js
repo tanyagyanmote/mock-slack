@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
-var bcrypt = require('bcrypt');
+// const jwt = require('jsonwebtoken');
+// let bcrypt = require('bcrypt');
 
 const {Pool} = require('pg');
 
@@ -13,104 +13,119 @@ const pool = new Pool({
 
 exports.login = async (email) => {
   const query = {
-    text: `SELECT info FROM users WHERE info ->> 'email' = $1`,
+    text: `SELECT id, info FROM users WHERE info ->> 'email' = $1`,
     values: [`${email}`],
   };
   const {rows} = await pool.query(query);
   if (rows.length === 0) {
     return null;
   }
-  return rows[0].info;
+  return rows[0];
 };
 
-exports.addWorkspaceToUser = async (email, workspaceData) => {
-  const selectQuery = {
-    text: `SELECT id FROM users WHERE info ->> 'email' = $1`,
-    values: [email],
+exports.getUserWorkspacesByID = async (userID) => {
+  const workspaceQuery = {
+    // text: 'SELECT id, info FROM workspaces WHERE owner_id = $1',
+    text: `SELECT w.id, w.owner_id, w.info FROM workspace_memberships uw
+    LEFT OUTER JOIN workspaces w ON uw.workspace_id = w.id
+    WHERE uw.user_id = $1`,
+    values: [userID],
   };
-  const res = await pool.query(selectQuery);
-  if (res.rows.length === 0) {
-    return null
+  const {rows} = await pool.query(workspaceQuery);
+  if (rows.length == 0) {
+    return null;
   }
-  const userId = res.rows[0].id;
+  return rows;
+};
+
+exports.addWorkspaceToUser = async (userID, workspaceData) => {
+  const userCheckQuery = {
+    text: 'SELECT id FROM users WHERE id = $1',
+    values: [userID],
+  };
+  const userCheckRes = await pool.query(userCheckQuery);
+  if (userCheckRes.rows.length === 0) {
+    return null;
+  }
   const insertQuery = {
-    text: "INSERT INTO workspaces (owner_id, info) VALUES ($1, $2::jsonb) RETURNING id",
-    values: [userId, JSON.stringify(workspaceData)],
+    text:
+    `INSERT INTO workspaces 
+    (owner_id, info) VALUES ($1, $2::jsonb) RETURNING id, info`,
+    values: [userID, JSON.stringify(workspaceData)],
   };
   const insertRes = await pool.query(insertQuery);
-  return insertRes.rows[0].id;
-};
-
-exports.getUserWorkspacesByEmail = async (email) => {
-  const query = {
-    text: "SELECT id FROM users WHERE info ->> 'email' = $1",
-    values: [email],
-  };
-  const result = await pool.query(query);
-  if (result.rows.length === 0) {
-    return null;
-  }
-  const userInfo = result.rows[0].id;
-  const workspaceQuery = {
-    text: "SELECT id, info FROM workspaces WHERE owner_id = $1",
-    values: [userInfo],
-  };
-  const workspaceRes = await pool.query(workspaceQuery);
-  if (workspaceRes.rows.length === 0) {
-    return null;
-  }
-  const workspaces = workspaceRes.rows.map(row => ({
-    ...row.info
-  }));
-  return workspaces;
-};
-
-exports.getChannelsByWorkspace = async (email, workspaceName) => {
-  const query = {
-    text: `SELECT id FROM users WHERE info ->> 'email' = $1`,
-    values: [email],
-  };
-  const result = await pool.query(query);
-  if (result.rows.length === 0) {
-    return null;
-  }
-  const workspaces = result.rows[0].id;
-  const workspaceQuery = {
-    text: "SELECT id FROM workspaces WHERE owner_id = $1 AND info ->> 'name' = $2",
-    values: [workspaces, workspaceName],
-  };
-  const workspaceResult = await pool.query(workspaceQuery);
-  if (workspaceResult.rows.length === 0) {
-    throw new Error('Workspace not found');
-  }
-  const workspaceId = workspaceResult.rows[0].id;
-  const channelQuery = {
-    text: "SELECT info FROM channels WHERE workspace_id = $1",
-    values: [workspaceId],
-  };
-  const channelResult = await pool.query(channelQuery);
-  const channels = channelResult.rows.map(row => row.info.name);
-  return channels;
-};
-
-exports.addChannelToWorkspace = async (email, workspaceName, channelName) => {
-  const selectQuery = {
-      text: `SELECT id FROM users WHERE info ->> 'email' = $1`,
-      values: [email],
-  };
-  const result = await pool.query(selectQuery);
-  // if (result.rows.length === 0) {
-  //   throw new Error('User not found');
+  // if (insertRes.rows.length === 0) {
+  //   return null;
   // }
-  //this will never hit since the user doesn't exist ... i'll only get 400 refactor to add a fucntion that will check?
+  const newWorkspaceID = insertRes.rows[0].id;
+  const insertMembershipQuery = {
+    text:
+    'INSERT INTO workspace_memberships (user_id, workspace_id) VALUES ($1, $2)',
+    values: [userID, newWorkspaceID],
+  };
+  await pool.query(insertMembershipQuery);
+  return insertRes.rows[0];
+};
+
+exports.getChannelsByWorkspace = async (workspaceID) => {
   const workspaceQuery = {
-    text: `SELECT id FROM workspaces WHERE owner_id = $1 AND info ->> 'name' = $2`,
-    values: [result.rows[0].id, workspaceName],
+    // text: 'SELECT id FROM workspaces WHERE owner_id = $1
+    // AND info ->> \'name\' = $2',
+    text: `Select * FROM channels WHERE workspace_id = $1`,
+    values: [workspaceID],
   };
-  const workspaceResult = await pool.query(workspaceQuery);
+  const {rows} = await pool.query(workspaceQuery);
+  // if (workspaceResult.rows.length === 0) {
+  //   return null;
+  // }
+  // console.log(rows)
+  return rows;
+  // const workspaceId = workspaceResult.rows[0].id;
+  // const channelQuery = {
+  //   text: 'SELECT info FROM channels WHERE workspace_id = $1',
+  //   values: [workspaceId],
+  // };
+  // const {rows} = await pool.query(channelQuery);
+  // return rows;
+};
+
+exports.addChannelToWorkspace = async (workspaceID, channelName) => {
+  // const workspaceQuery = {
+  //   text: `SELECT
+  //   id FROM workspaces WHERE owner_id = $1 AND info ->> 'name' = $2`,
+  //   values: [userID, workspaceName],
+  // };
+  // const workspaceResult = await pool.query(workspaceQuery);
+  // if (workspaceResult.rows.length === 0) {
+  //   return null;
+  // }
   const insertChannelQuery = {
-    text: `INSERT INTO channels (workspace_id, info) VALUES ($1, $2::jsonb)`,
-    values: [workspaceResult.rows[0].id, JSON.stringify({name: channelName})],
+    text:
+    `INSERT INTO channels (workspace_id, info) VALUES ($1, $2) RETURNING *`,
+    values: [workspaceID, JSON.stringify(channelName)],
   };
-  await pool.query(insertChannelQuery);
+  const {rows} = await pool.query(insertChannelQuery);
+  return rows;
+};
+
+exports.getMessagesByChannel = async (channelID) => {
+  const query = {
+    text: `SELECT * FROM msg WHERE channel_id = $1`,
+    values: [channelID],
+  };
+  const {rows} = await pool.query(query);
+  return rows;
+};
+
+
+exports.deleteChannelFromWorkspace = async (channelID) => {
+  const deleteChannelQuery = {
+    text: `DELETE FROM channels WHERE id = $1 RETURNING *`,
+    values: [channelID],
+  };
+  const {rows} = await pool.query(deleteChannelQuery);
+  // if (rows.length === 0) {
+  //   return null;
+  // }
+  return rows;
 };

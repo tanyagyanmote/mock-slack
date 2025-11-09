@@ -9,17 +9,22 @@ import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { useNavigate } from 'react-router-dom';
-import { useContext } from 'react';
-import { AuthContext, useAuth } from '../AuthContext';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {useNavigate} from 'react-router-dom';
+import LoggedInContext from '../LoggedInContext';
 
 
-//https://github.com/mui/material-ui/blob/v5.15.11/docs/data/material/getting-started/templates/sign-in/SignIn.js
+// https://github.com/mui/material-ui/blob/v5.15.11/docs/data/material/getting-started/templates/sign-in/SignIn.js
 
+/**
+ * Copyright component displaying copyright information.
+ * @param {object} props - The props for the component.
+ * @return {JSX.Element} The rendered copyright component.
+ */
 function Copyright(props) {
   return (
-    <Typography variant="body2" color="text.secondary" align="center" {...props}>
+    <Typography variant="body2"
+      color="text.secondary" align="center" {...props}>
       {'Copyright © '}
       <Link color="inherit" href="https://mui.com/">
         tgyanmot
@@ -31,36 +36,36 @@ function Copyright(props) {
 }
 
 const defaultTheme = createTheme();
-
+/**
+ * Navbar component for the application.
+ * @return {JSX.Element} The rendered navbar component.
+ */
 export default function SignUp() {
   const navigate = useNavigate();
-  const { setIsLoggedIn } = useContext(AuthContext);
-  const { setUserEmail } = useAuth();
-
+  const {setLoggedIn} = React.useContext(LoggedInContext);
   const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const email = data.get('email');
     const password = data.get('password');
     const response = await fetch('http://localhost:3010/v0/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      if (response.ok) {
-        const result = await response.json();
-        localStorage.setItem('user', JSON.stringify(result));
-        localStorage.setItem('accessToken', result.accessToken);
-        setUserEmail(email);
-        setIsLoggedIn(true);
-        console.log('Login Success:', result);
-        navigate('/'); 
-      } else {
-        const errorResult = await response.json();
-        console.error('Login Failed:', errorResult.message);
-      }
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({email, password}),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      localStorage.setItem('accessToken', result.accessToken);
+      localStorage.setItem('userID', result.userID);
+      localStorage.setItem('name', result.name);
+      setLoggedIn(true);
+      navigate('/');
+    } else {
+      alert('Incorrect Login');
+    }
   };
 
   return (
@@ -75,13 +80,13 @@ export default function SignUp() {
             alignItems: 'center',
           }}
         >
-          <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
+          <Avatar sx={{m: 1, bgcolor: 'secondary.main'}}>
             <LockOutlinedIcon />
           </Avatar>
-          <Typography component="h1" variant="h5">
+          <Typography id = "login" component="h1" variant="h5">
             Login
           </Typography>
-          <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 3 }}>
+          <Box component="form" noValidate onSubmit={handleSubmit} sx={{mt: 3}}>
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
@@ -89,6 +94,7 @@ export default function SignUp() {
                   fullWidth
                   id="email"
                   label="Email"
+                  aria-label = "email"
                   name="email"
                   autoComplete="email"
                 />
@@ -100,6 +106,7 @@ export default function SignUp() {
                   name="password"
                   label="Password"
                   type="password"
+                  aria-label = "password"
                   id="password"
                   autoComplete="new-password"
                 />
@@ -109,13 +116,15 @@ export default function SignUp() {
               type="submit"
               fullWidth
               variant="contained"
-              sx={{ mt: 3, mb: 2 }}
+              sx={{mt: 3, mb: 2}}
+              aria-label="sign-in-button"
+              id = 'signin'
             >
               Sign In
             </Button>
           </Box>
         </Box>
-        <Copyright sx={{ mt: 5 }} />
+        <Copyright sx={{mt: 5}} />
       </Container>
     </ThemeProvider>
   );

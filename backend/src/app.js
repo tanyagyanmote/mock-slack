@@ -14,7 +14,7 @@ const OpenApiValidator = require('express-openapi-validator');
 require('dotenv').config();
 
 
-const dummy = require('./dummy');
+// const dummy = require('./dummy');
 const auth = require('./auth');
 
 const app = express();
@@ -31,7 +31,7 @@ app.use(
   swaggerUi.setup(apidoc),
 );
 
-app.get('/v0/dummy', dummy.get);
+// app.get('/v0/dummy', dummy.get);
 
 app.use(
   OpenApiValidator.middleware({
@@ -42,15 +42,21 @@ app.use(
 );
 
 // Your routes go here
-app.post('/v0/login',     auth.login);
+app.post('/v0/login', auth.login);
 
-app.post('/v0/users/:email/workspaces', auth.check, auth.postWorkspace);
+app.post('/v0/users/:userID/workspaces', auth.check, auth.postWorkspace);
 
-app.get('/v0/users/:email/workspaces', auth.check, auth.getWorkspace);
+app.get('/v0/users/:userID/workspaces', auth.check, auth.getWorkspace);
 
-app.get('/v0/users/:email/workspaces/:workspaceName/channels', auth.check, auth.getChannels);
+app.get('/v0/users/userID/workspaces/:workspaceID/channels',
+  auth.check, auth.getChannels);
 
-app.post('/v0/users/:email/workspaces/:workspaceName/channels', auth.check, auth.postChannel);
+app.post('/v0/users/userID/workspaces/:workspaceID/channels',
+  auth.check, auth.postChannel);
+
+app.get('/v0/channel/:id/message', auth.check, auth.getMessages);
+
+app.delete('/v0/channel/:id', auth.check, auth.deleteChannel);
 
 
 app.use((err, req, res, next) => {

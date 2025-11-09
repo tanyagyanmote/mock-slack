@@ -22,6 +22,6 @@ CREATE TABLE workspaces (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), owner_id
 
 CREATE TABLE channels ( id UUID PRIMARY KEY DEFAULT gen_random_uuid(),workspace_id UUID,info JSONB);
 
-CREATE TABLE msg (id UUID PRIMARY KEY DEFAULT gen_random_uuid(),channel_id UUID,info JSONB);
+CREATE TABLE msg (id UUID PRIMARY KEY DEFAULT gen_random_uuid(),channel_id UUID, owner_id UUID, info JSONB);
 
 CREATE TABLE workspace_memberships (user_id UUID,workspace_id UUID, PRIMARY KEY (user_id, workspace_id));

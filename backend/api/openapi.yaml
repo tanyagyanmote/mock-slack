@@ -12,7 +12,7 @@ info:
 servers:
   - url: http://localhost:3010/v0
 
-paths:
+paths:      
   /login:
     post:
       description: Login
@@ -41,14 +41,16 @@ paths:
     get:
       security:
         - bearerAuth: []
-      description: Fetches workspaces associated with a userID
+      description: Fetches workspaces associated with a user
       parameters:
-        - in: path
-          name: email
+        - name: userID
+          in: path
           required: true
           schema:
             type: string
+            format: uuid
           description: The user's ID
+
       responses:
         200:
           description: Successfully retrieved workspaces
@@ -56,6 +58,7 @@ paths:
             application/json:
               schema:
                 type: array
+
         403:
           description: Bad Unauthorized token
 
@@ -70,12 +73,13 @@ paths:
         - bearerAuth: []
       description: Adds a workspace to a user
       parameters:
-        - in: path
-          name: email
+        - name: userID
+          in: path
           required: true
           schema:
             type: string
-          description: The user's email
+            format: uuid
+          description: The user's ID
       requestBody:
         required: true
         content:
@@ -99,26 +103,45 @@ paths:
                     type: string
         default:
           $ref: '#/components/schemas/UnexpectedError'
-        
-  /users/{email}/workspaces/{workspaceName}/channels:
+
+  /channel/{id}/message:
+    get:
+      security:
+        - bearerAuth: []
+      description: fetches messages within a specific channel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the channel to get messages from
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Messages fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+        '404':
+          description: Messages not found
+        '500':
+          description: Internal server error
+  
+  /users/userID/workspaces/{workspaceID}/channels:
     post:
       security:
         - bearerAuth: []
       description: Creates a new channel within a specific workspace
       parameters:
-        - name: email
-          in: path
-          required: true
-          description: The email of the user.
-          schema:
-            type: string
-            format: email
-        - name: workspaceName
+        - name: workspaceID
           in: path
           required: true
           description: The name of the workspace to add the channel to.
           schema:
             type: string
+            format: uuid
       requestBody:
         required: true
         description: Channel creation data
@@ -138,12 +161,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  channels:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Channel'
+                type: array
         '404':
           description: User or workspace not found
         '500':
@@ -154,51 +172,47 @@ paths:
         - bearerAuth: []
       description: Retrieves channels from a workspace
       parameters:
-        - name: email
+        - name: workspaceID
           in: path
           required: true
-          description: The user's email address.
+          description: The name of the workspace
           schema:
             type: string
-            format: email
-        - name: workspaceName
-          in: path
-          required: true
-          description: The name of the workspace to retrieve channels from.
-          schema:
-            type: string
+            format: uuid
       responses:
         '200':
           description: A list of channels within the specified workspace.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  channels:
-                    type: array
-                    items:
-                      type: string
+                type: array
         '404':
           description: User or workspace not found.
-        '500':
-          description: Internal server error.
 
-  /dummy:
-    get:
+  /channel/{id}:
+    delete:
       security:
         - bearerAuth: []
-      description: Dummy Endpoint
+      description: Deletes a channel from the workspace based on the channel ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the channel to delete.
+          schema:
+            type: string
+            format: uuid
+
       responses:
         200:
-          description: Succesful
-  
-        default:
-          description: unexpected error
+          description: Channel successfully deleted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                type: array
+        500:
+          description: Internal server error
+                
                 
 components:
   schemas:
@@ -236,6 +250,7 @@ components:
       properties:
         email:
           type: string
+          format: email
         password:
           type: string
       required:
